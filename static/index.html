@@ -1,117 +1,374 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f7f8f1">
 
-    <title>LLMLingua V4 - Prompt Compression</title>
+    <title>Lingua V4 — Prompt Compression</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 
 <body>
 
-    <div class="container">
+<header class="site-header">
+    <a class="brand" href="#home">
+        <span class="brand-mark">L<span>v4</span></span>
+        <span>lingua<span class="brand-dot">.</span></span>
+    </a>
 
-        <div class="main-layout">
+    <nav class="nav-links">
+        <a href="#how-it-works">How it works</a>
+        <a href="#why-v4">Why V4</a>
+        <a class="nav-cta" href="#compressor">Open compressor ↗</a>
+    </nav>
 
-            <!-- LEFT PANEL: INPUT -->
+    <button class="mobile-menu" id="mobileMenu">☰</button>
+</header>
 
-            <div class="panel">
+<main>
 
-                <p>01 / INPUT</p>
+    <!-- HERO LANDING PAGE -->
 
-                <h2>Your original prompt</h2>
+    <section class="hero section-wrap" id="home">
 
-                <textarea
-                    id="promptInput"
-                    placeholder="Enter your prompt here..."
-                    maxlength="20000"
-                ></textarea>
+        <div class="hero-copy">
 
-                <p id="charCount">0 characters</p>
+            <p class="eyebrow">✳ PROMPT COMPRESSION, MADE SIMPLE</p>
 
-                <div class="compression-section">
+            <h1>
+                Big ideas.<br>
+                Fewer tokens.<br>
+                <em>More room to think.</em>
+            </h1>
 
-                    <label for="compressionRange">
-                        Target Compression Reduction
+            <p class="hero-description">
+                Keep what matters. Trim what doesn't.
+                Use your fine-tuned LLMLingua V4 model to
+                make prompts lighter without losing their intent.
+            </p>
 
-                        <span id="rangeValue">30%</span>
-                    </label>
+            <div class="hero-actions">
+                <a href="#compressor" class="button button-primary">
+                    Compress a prompt ↗
+                </a>
 
-                    <select id="compressionRange">
-
-                        <option value="20">20%</option>
-
-                        <option value="30" selected>30%</option>
-
-                        <option value="40">40%</option>
-
-                        <option value="50">50%</option>
-
-                        <option value="60">60%</option>
-
-                    </select>
-
-                    <p>Choose how much prompt length you want to reduce.</p>
-
-                </div>
-
-                <button id="compressBtn" type="button">
-                    Compress with V4 ↗
-                </button>
-
-                <p>
-                    Your prompt is sent to this website's backend,
-                    then forwarded to your Hugging Face Space.
-                </p>
-
+                <a href="#how-it-works" class="text-link">
+                    See how it works →
+                </a>
             </div>
 
-
-            <!-- RIGHT PANEL: OUTPUT -->
-
-            <div class="panel output-panel">
-
-                <p>02 / OUTPUT</p>
-
-                <h2>Compressed prompt</h2>
-
-                <pre id="output">Your compressed prompt will appear here.</pre>
-
-                <div class="stats">
-
-                    <h3>Compression Statistics</h3>
-
-                    <p>
-                        Original Tokens:
-                        <span id="originalTokens">-</span>
-                    </p>
-
-                    <p>
-                        Compressed Tokens:
-                        <span id="compressedTokens">-</span>
-                    </p>
-
-                    <p>
-                        Compression Ratio:
-                        <span id="compressionRatio">-</span>
-                    </p>
-
-                </div>
-
+            <div class="hero-trust">
+                <span>✓ Meaning-aware extraction</span>
+                <span>✓ Adjustable reduction</span>
             </div>
 
         </div>
 
-    </div>
+        <div class="hero-art">
+
+            <div class="art-orbit orbit-one"></div>
+            <div class="art-orbit orbit-two"></div>
+
+            <div class="art-note">
+                less noise,<br>
+                <i>more signal.</i>
+            </div>
+
+            <div class="document document-back">
+                <span class="doc-line wide"></span>
+                <span class="doc-line"></span>
+                <span class="doc-line short"></span>
+                <div class="doc-tags">
+                    <b></b><b></b><b></b>
+                </div>
+            </div>
+
+            <div class="compress-arrow">↓</div>
+
+            <div class="document document-front">
+                <div class="doc-heading"></div>
+                <span class="doc-line wide"></span>
+                <span class="doc-line"></span>
+                <span class="doc-line short"></span>
+                <div class="saved-stamp">V4 · OPTIMIZED</div>
+            </div>
+
+            <div class="art-caption">
+                <span class="caption-dot"></span>
+                Your prompt, streamlined.
+            </div>
+
+            <div class="token-chip chip-one">1,240 tokens</div>
+            <div class="token-chip chip-two">−30% length</div>
+
+        </div>
+
+    </section>
 
 
-    <!-- JAVASCRIPT -->
+    <!-- HOW IT WORKS -->
 
-    <script src="/static/app.js"></script>
+    <section class="steps-section section-wrap" id="how-it-works">
+
+        <div class="section-heading">
+            <p class="eyebrow">FROM LONG TO LEAN</p>
+            <h2>Three steps. Then you're <em>good to go.</em></h2>
+        </div>
+
+        <div class="steps-grid">
+
+            <article class="step-card">
+                <div class="step-top">
+                    <span class="step-icon">▤</span>
+                    <span class="step-number">01</span>
+                </div>
+
+                <h3>Bring your prompt</h3>
+
+                <p>
+                    Paste an instruction, project brief,
+                    or context that you want to make more concise.
+                </p>
+            </article>
+
+            <article class="step-card">
+                <div class="step-top">
+                    <span class="step-icon">⌁</span>
+                    <span class="step-number">02</span>
+                </div>
+
+                <h3>Choose your reduction</h3>
+
+                <p>
+                    Set the target reduction and let your
+                    fine-tuned V4 model identify what to keep.
+                </p>
+            </article>
+
+            <article class="step-card">
+                <div class="step-top">
+                    <span class="step-icon">◷</span>
+                    <span class="step-number">03</span>
+                </div>
+
+                <h3>Use fewer tokens</h3>
+
+                <p>
+                    Review the compressed prompt and token
+                    statistics, then copy it into your workflow.
+                </p>
+            </article>
+
+        </div>
+
+    </section>
+
+
+    <!-- FEATURE BANNER -->
+
+    <section class="feature-banner section-wrap" id="why-v4">
+
+        <div class="feature-leaf">✳</div>
+
+        <div class="feature-title">
+            Thoughtfully compressed.<br>
+            <em>Carefully preserved.</em>
+        </div>
+
+        <p>
+            Designed for ML and AI prompts. Keep key instructions,
+            technical terms, numbers, and constraints in focus
+            while reducing unnecessary prompt length.
+        </p>
+
+        <a href="#compressor" class="feature-link">
+            Try V4 ↗
+        </a>
+
+    </section>
+
+
+    <!-- COMPRESSION WORKSPACE -->
+
+    <section class="workspace-section section-wrap" id="compressor">
+
+        <div class="workspace-heading">
+
+            <div>
+                <p class="eyebrow">THE V4 WORKSPACE</p>
+                <h2>Make every token <em>count.</em></h2>
+            </div>
+
+            <p>
+                Paste your prompt, choose a reduction target,
+                and run the model.
+            </p>
+
+        </div>
+
+        <div class="workspace-grid">
+
+            <!-- INPUT -->
+
+            <section class="work-card input-card">
+
+                <div class="card-kicker">
+                    <span>01 / INPUT</span>
+                    <button class="clear-button" id="clearButton">
+                        Clear
+                    </button>
+                </div>
+
+                <h3>Your original prompt</h3>
+
+                <textarea
+                    id="promptInput"
+                    maxlength="20000"
+                    placeholder="Paste your prompt here..."
+                ></textarea>
+
+                <div class="input-meta">
+                    <span id="charCount">0 / 20,000 characters</span>
+                    <span>Up to 20,000 characters</span>
+                </div>
+
+                <div class="control-box">
+
+                    <label for="compressionRange">
+                        Target compression reduction
+                        <strong id="rangeValue">30%</strong>
+                    </label>
+
+                    <select id="compressionRange">
+                        <option value="20">20%</option>
+                        <option value="30" selected>30%</option>
+                        <option value="40">40%</option>
+                        <option value="50">50%</option>
+                        <option value="60">60%</option>
+                    </select>
+
+                    <small>
+                        Choose how much prompt length you want to reduce.
+                    </small>
+
+                </div>
+
+                <button
+                    class="button button-primary compress-button"
+                    id="compressBtn"
+                    type="button"
+                >
+                    <span class="button-label">Compress with V4</span>
+                    <span>↗</span>
+                </button>
+
+                <p class="privacy-note">
+                    Your prompt is sent to this website's backend,
+                    then forwarded to your Hugging Face Space.
+                </p>
+
+            </section>
+
+
+            <!-- OUTPUT -->
+
+            <section class="work-card result-card">
+
+                <div class="card-kicker">
+                    <span>02 / OUTPUT</span>
+                    <span class="result-badge" id="resultBadge">
+                        Waiting for input
+                    </span>
+                </div>
+
+                <h3>Compressed prompt</h3>
+
+                <div class="empty-state" id="emptyState">
+
+                    <div class="empty-icon">↘</div>
+
+                    <h4>Your compressed prompt will appear here.</h4>
+
+                    <p>
+                        Enter a prompt and select "Compress with V4".
+                    </p>
+
+                </div>
+
+                <div class="result-content hidden" id="resultContent">
+
+                    <pre id="compressedText"></pre>
+
+                    <div class="result-actions">
+
+                        <button class="copy-button" id="copyButton">
+                            Copy prompt
+                        </button>
+
+                        <span id="copyStatus"></span>
+
+                    </div>
+
+                </div>
+
+                <div class="stats-block">
+
+                    <h4>Compression statistics</h4>
+
+                    <div class="stats-grid">
+
+                        <div class="stat">
+                            <span>Original tokens</span>
+                            <strong id="originalTokens">—</strong>
+                        </div>
+
+                        <div class="stat">
+                            <span>Compressed tokens</span>
+                            <strong id="compressedTokens">—</strong>
+                        </div>
+
+                        <div class="stat">
+                            <span>Compression ratio</span>
+                            <strong id="compressionRatio">—</strong>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <p class="status-message" id="statusMessage"></p>
+
+            </section>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<footer class="site-footer section-wrap">
+
+    <a class="brand footer-brand" href="#home">
+        <span class="brand-mark">L<span>v4</span></span>
+        <span>lingua<span class="brand-dot">.</span></span>
+    </a>
+
+    <p>Built to make prompts lighter, not less meaningful.</p>
+
+    <a href="#home">Back to top ↑</a>
+
+</footer>
+
+
+<script src="/static/app.js" defer></script>
 
 </body>
-
 </html>
