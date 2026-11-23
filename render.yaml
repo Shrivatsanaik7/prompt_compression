@@ -5,11 +5,9 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app
     envVars:
-      - key: SPACE_APP_API_KEY
-        sync: false
+      - key: PYTHON_VERSION
+        value: 3.12.0
       - key: HF_SPACE_ID
         value: Shrivatsanaik7/llmlingua-v4-api
       - key: HF_SPACE_API_NAME
         value: /compress
-      - key: MAX_PROMPT_CHARS
-        value: "20000"
