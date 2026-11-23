@@ -1,53 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
 
-<div class="input-section">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <label for="promptInput">Your original prompt</label>
+    <title>LLMLingua V4 - Prompt Compression</title>
 
-    <textarea
-        id="promptInput"
-        placeholder="Enter your prompt here..."
-        maxlength="20000"
-    ></textarea>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
 
-    <p id="charCount">0 characters</p>
+<body>
 
-    <div class="compression-section">
+    <div class="container">
 
-        <label for="compressionRange">
-            Target Compression Reduction
-            <span id="rangeValue">30%</span>
-        </label>
+        <div class="main-layout">
 
-        <select id="compressionRange">
-            <option value="20">20%</option>
-            <option value="30" selected>30%</option>
-            <option value="40">40%</option>
-            <option value="50">50%</option>
-            <option value="60">60%</option>
-        </select>
+            <!-- LEFT PANEL: INPUT -->
+
+            <div class="panel">
+
+                <p>01 / INPUT</p>
+
+                <h2>Your original prompt</h2>
+
+                <textarea
+                    id="promptInput"
+                    placeholder="Enter your prompt here..."
+                    maxlength="20000"
+                ></textarea>
+
+                <p id="charCount">0 characters</p>
+
+                <div class="compression-section">
+
+                    <label for="compressionRange">
+                        Target Compression Reduction
+
+                        <span id="rangeValue">30%</span>
+                    </label>
+
+                    <select id="compressionRange">
+
+                        <option value="20">20%</option>
+
+                        <option value="30" selected>30%</option>
+
+                        <option value="40">40%</option>
+
+                        <option value="50">50%</option>
+
+                        <option value="60">60%</option>
+
+                    </select>
+
+                    <p>Choose how much prompt length you want to reduce.</p>
+
+                </div>
+
+                <button id="compressBtn" type="button">
+                    Compress with V4 ↗
+                </button>
+
+                <p>
+                    Your prompt is sent to this website's backend,
+                    then forwarded to your Hugging Face Space.
+                </p>
+
+            </div>
+
+
+            <!-- RIGHT PANEL: OUTPUT -->
+
+            <div class="panel output-panel">
+
+                <p>02 / OUTPUT</p>
+
+                <h2>Compressed prompt</h2>
+
+                <pre id="output">Your compressed prompt will appear here.</pre>
+
+                <div class="stats">
+
+                    <h3>Compression Statistics</h3>
+
+                    <p>
+                        Original Tokens:
+                        <span id="originalTokens">-</span>
+                    </p>
+
+                    <p>
+                        Compressed Tokens:
+                        <span id="compressedTokens">-</span>
+                    </p>
+
+                    <p>
+                        Compression Ratio:
+                        <span id="compressionRatio">-</span>
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
 
     </div>
 
-    <button id="compressBtn" type="button">
-        Compress with V4 ↗
-    </button>
 
-</div>
+    <!-- JAVASCRIPT -->
 
-<div class="output-section">
+    <script src="/static/app.js"></script>
 
-    <h3>Compressed Prompt</h3>
+</body>
 
-    <pre id="output">Your compressed prompt will appear here.</pre>
-
-    <h3>Compression Statistics</h3>
-
-    <p>Original Tokens: <span id="originalTokens">-</span></p>
-
-    <p>Compressed Tokens: <span id="compressedTokens">-</span></p>
-
-    <p>Compression Ratio: <span id="compressionRatio">-</span></p>
-
-</div>
-
-<script src="/static/app.js"></script>
+</html>
