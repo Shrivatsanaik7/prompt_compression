@@ -1,320 +1,130 @@
-import logging
 import os
-import threading
-from typing import Any
+import logging
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory
 from gradio_client import Client
-
-# --------------------------------------------------
-# CONFIGURATION
-# --------------------------------------------------
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-STATIC_DIR = os.path.join(BASE_DIR, "static")
+app = Flask(__name__, static_folder="static")
 
-SPACE_ID = os.getenv(
+HF_SPACE_ID = os.getenv(
     "HF_SPACE_ID",
     "Shrivatsanaik7/llmlingua-v4-api"
 )
 
-SPACE_API_NAME = os.getenv(
+HF_SPACE_API_NAME = os.getenv(
     "HF_SPACE_API_NAME",
     "/compress"
 )
 
-SPACE_APP_API_KEY = os.getenv(
-    "SPACE_APP_API_KEY",
-    ""
-).strip()
+SPACE_APP_API_KEY = os.getenv("SPACE_APP_API_KEY")
+HF_TOKEN = os.getenv("HF_TOKEN")
 
-HF_TOKEN = os.getenv(
-    "HF_TOKEN",
-    ""
-).strip()
-
-MAX_PROMPT_CHARS = int(
-    os.getenv("MAX_PROMPT_CHARS", "20000")
-)
-
-ALLOWED_REDUCTIONS = [20, 30, 40, 50, 60]
-
-# --------------------------------------------------
-# FLASK APP
-# --------------------------------------------------
-
-app = Flask(__name__, static_folder=STATIC_DIR)
-
-_client = None
-_client_lock = threading.Lock()
+if not SPACE_APP_API_KEY:
+    logger.warning("SPACE_APP_API_KEY is not configured.")
 
 
-# --------------------------------------------------
-# HUGGING FACE SPACE CONNECTION
-# --------------------------------------------------
-
-def get_space_client() -> Client:
-    global _client
-
-    if _client is None:
-        with _client_lock:
-            if _client is None:
-
-                kwargs = {
-                    "verbose": False
-                }
-
-                if HF_TOKEN:
-                    kwargs["token"] = HF_TOKEN
-
-                logger.info(
-                    "Connecting to Hugging Face Space: %s",
-                    SPACE_ID
-                )
-
-                _client = Client(
-                    SPACE_ID,
-                    **kwargs
-                )
-
-    return _client
-
-
-# --------------------------------------------------
-# JSON CONVERSION
-# --------------------------------------------------
-
-def make_json_safe(value: Any) -> Any:
-
-    if value is None or isinstance(
-        value,
-        (str, int, float, bool)
-    ):
-        return value
-
-    if isinstance(value, dict):
-        return {
-            str(key): make_json_safe(val)
-            for key, val in value.items()
-        }
-
-    if isinstance(value, (list, tuple)):
-        return [
-            make_json_safe(item)
-            for item in value
-        ]
-
-    return str(value)
-
-
-# --------------------------------------------------
-# HOME PAGE
-# --------------------------------------------------
-
-@app.get("/")
+@app.route("/")
 def home():
-
-    return send_from_directory(
-        STATIC_DIR,
-        "index.html"
-    )
+    return send_from_directory("static", "index.html")
 
 
-# --------------------------------------------------
-# FRONTEND JAVASCRIPT
-# --------------------------------------------------
-
-@app.get("/app.js")
-def javascript():
-
-    return send_from_directory(
-        STATIC_DIR,
-        "app.js"
-    )
-
-
-# --------------------------------------------------
-# FRONTEND CSS
-# --------------------------------------------------
-
-@app.get("/styles.css")
-def stylesheet():
-
-    return send_from_directory(
-        STATIC_DIR,
-        "styles.css"
-    )
-
-
-# --------------------------------------------------
-# HEALTH CHECK
-# --------------------------------------------------
-
-@app.get("/api/health")
+@app.route("/api/health", methods=["GET"])
 def health():
-
     return jsonify({
-        "ok": True,
-        "service": "LLMLingua-2 V4 Web Backend",
-        "space": SPACE_ID,
-        "endpoint": SPACE_API_NAME
+        "status": "online",
+        "service": "LLMLingua V4 API"
     })
 
 
-# --------------------------------------------------
-# PROMPT COMPRESSION API
-# --------------------------------------------------
-
-@app.post("/api/compress")
+@app.route("/api/compress", methods=["POST"])
 def compress():
 
-    # Get JSON request
-    body = request.get_json(silent=True) or {}
-
-    prompt = body.get("prompt", "")
-
-    target_reduction = body.get(
-        "target_reduction",
-        30
-    )
-
-    # ----------------------------------------------
-    # VALIDATE PROMPT
-    # ----------------------------------------------
-
-    if not isinstance(prompt, str) or not prompt.strip():
-
-        return jsonify({
-            "success": False,
-            "error": "Please enter a prompt."
-        }), 400
-
-    prompt = prompt.strip()
-
-    if len(prompt) > MAX_PROMPT_CHARS:
-
-        return jsonify({
-            "success": False,
-            "error": (
-                f"Prompt is too long. "
-                f"Maximum length is "
-                f"{MAX_PROMPT_CHARS:,} characters."
-            )
-        }), 413
-
-    # ----------------------------------------------
-    # VALIDATE COMPRESSION REDUCTION
-    # ----------------------------------------------
-
     try:
+        data = request.get_json(silent=True) or {}
 
-        target_reduction = int(target_reduction)
+        prompt = data.get("prompt", "").strip()
+        target_reduction = data.get("target_reduction", 30)
 
-    except (ValueError, TypeError):
+        if not prompt:
+            return jsonify({
+                "error": "Please enter a prompt."
+            }), 400
 
-        return jsonify({
-            "success": False,
-            "error": "Invalid compression reduction value."
-        }), 400
+        if not SPACE_APP_API_KEY:
+            return jsonify({
+                "error": "Backend API key is not configured."
+            }), 500
 
-    if target_reduction not in ALLOWED_REDUCTIONS:
+        try:
+            target_reduction = int(target_reduction)
+        except (ValueError, TypeError):
+            return jsonify({
+                "error": "Invalid compression setting."
+            }), 400
 
-        return jsonify({
-            "success": False,
-            "error": (
-                "Choose a compression reduction "
-                "of 20%, 30%, 40%, 50%, or 60%."
-            )
-        }), 400
+        if not 20 <= target_reduction <= 60:
+            return jsonify({
+                "error": "Compression setting must be between 20 and 60."
+            }), 400
 
-    # ----------------------------------------------
-    # CHECK API KEY CONFIGURATION
-    # ----------------------------------------------
+        logger.info("Received compression request.")
 
-    if not SPACE_APP_API_KEY:
+        client_options = {}
 
-        logger.error(
-            "SPACE_APP_API_KEY is not configured."
+        if HF_TOKEN:
+            client_options["hf_token"] = HF_TOKEN
+
+        client = Client(
+            HF_SPACE_ID,
+            **client_options
         )
-
-        return jsonify({
-            "success": False,
-            "error": (
-                "The server is not configured yet. "
-                "Please configure SPACE_APP_API_KEY "
-                "in the Render environment variables."
-            )
-        }), 503
-
-    # ----------------------------------------------
-    # CONNECT TO HUGGING FACE AND COMPRESS
-    # ----------------------------------------------
-
-    try:
-
-        logger.info(
-            "Starting compression. Target reduction: %s%%",
-            target_reduction
-        )
-
-        client = get_space_client()
 
         result = client.predict(
-            api_key=SPACE_APP_API_KEY,
-            prompt=prompt,
-            target_reduction=target_reduction,
-            api_name=SPACE_API_NAME
+            SPACE_APP_API_KEY,
+            prompt,
+            target_reduction,
+            api_name=HF_SPACE_API_NAME
         )
 
-        safe_result = make_json_safe(result)
+        # Support either a dictionary or multiple Gradio outputs.
+        if isinstance(result, dict):
+            response_data = result
 
-        # Unwrap a single-item result list if returned
-        if isinstance(safe_result, list) and len(safe_result) == 1:
-            safe_result = safe_result[0]
+        elif isinstance(result, (list, tuple)):
+            response_data = {
+                "compressed_prompt": result[0] if len(result) > 0 else "",
+                "original_tokens": result[1] if len(result) > 1 else None,
+                "compressed_tokens": result[2] if len(result) > 2 else None,
+                "compression_ratio": result[3] if len(result) > 3 else None,
+                "saving": result[4] if len(result) > 4 else None
+            }
 
-        logger.info(
-            "Compression completed successfully."
-        )
+        else:
+            response_data = {
+                "compressed_prompt": str(result)
+            }
+
+        logger.info("Compression completed successfully.")
 
         return jsonify({
             "success": True,
-            "result": safe_result,
-            "target_reduction": target_reduction
+            **response_data
         })
 
-    # ----------------------------------------------
-    # ERROR HANDLING
-    # ----------------------------------------------
-
-    except Exception as exc:
-
-        logger.exception(
-            "Hugging Face Space request failed."
-        )
+    except Exception:
+        logger.exception("Compression request failed.")
 
         return jsonify({
             "success": False,
-            "error": (
-                "The V4 compression service could not "
-                "complete the request. The Hugging Face "
-                "Space may be waking up or temporarily "
-                "unavailable."
-            ),
-            "detail": str(exc)[:500]
-        }), 502
+            "error": "Compression failed. Please try again."
+        }), 500
 
-
-# --------------------------------------------------
-# LOCAL DEVELOPMENT
-# --------------------------------------------------
 
 if __name__ == "__main__":
-
     app.run(
         host="0.0.0.0",
-        port=int(os.getenv("PORT", "5000")),
-        debug=False
+        port=int(os.environ.get("PORT", 10000))
     )
