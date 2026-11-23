@@ -1,33 +1,53 @@
-<textarea id="promptInput" placeholder="Enter your prompt here..."></textarea>
 
-<label>
-    Compression Reduction:
-    <span id="rangeValue">30%</span>
-</label>
+<div class="input-section">
 
-<input
-    type="range"
-    id="compressionRange"
-    min="20"
-    max="60"
-    step="10"
-    value="30"
->
+    <label for="promptInput">Your original prompt</label>
 
-<button id="compressBtn">
-    Compress Prompt
-</button>
+    <textarea
+        id="promptInput"
+        placeholder="Enter your prompt here..."
+        maxlength="20000"
+    ></textarea>
 
-<h3>Compressed Prompt</h3>
+    <p id="charCount">0 characters</p>
 
-<pre id="output"></pre>
+    <div class="compression-section">
 
-<h3>Compression Statistics</h3>
+        <label for="compressionRange">
+            Target Compression Reduction
+            <span id="rangeValue">30%</span>
+        </label>
 
-<p>Original Tokens: <span id="originalTokens">-</span></p>
+        <select id="compressionRange">
+            <option value="20">20%</option>
+            <option value="30" selected>30%</option>
+            <option value="40">40%</option>
+            <option value="50">50%</option>
+            <option value="60">60%</option>
+        </select>
 
-<p>Compressed Tokens: <span id="compressedTokens">-</span></p>
+    </div>
 
-<p>Compression Ratio: <span id="compressionRatio">-</span></p>
+    <button id="compressBtn" type="button">
+        Compress with V4 ↗
+    </button>
+
+</div>
+
+<div class="output-section">
+
+    <h3>Compressed Prompt</h3>
+
+    <pre id="output">Your compressed prompt will appear here.</pre>
+
+    <h3>Compression Statistics</h3>
+
+    <p>Original Tokens: <span id="originalTokens">-</span></p>
+
+    <p>Compressed Tokens: <span id="compressedTokens">-</span></p>
+
+    <p>Compression Ratio: <span id="compressionRatio">-</span></p>
+
+</div>
 
 <script src="/static/app.js"></script>
