@@ -1,218 +1,262 @@
-import os
-import traceback
+<!DOCTYPE html>
+<html lang="en">
 
-from flask import Flask, request, jsonify, render_template
-from google import genai
-from gradio_client import Client
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-app = Flask(__name__)
+    <title>Prompt Engineering Studio | LLMLingua V4</title>
 
-# Hugging Face configuration
-HF_SPACE_ID = os.getenv(
-    "HF_SPACE_ID",
-    "Shrivatsanaik7/llmlingua-v4-api"
-)
+    <link rel="stylesheet" href="/static/styles.css">
 
-HF_SPACE_API_NAME = os.getenv(
-    "HF_SPACE_API_NAME",
-    "/compress"
-)
+    <script src="/static/app.js" defer></script>
+</head>
 
-HF_TOKEN = os.getenv("HF_TOKEN")
-SPACE_APP_API_KEY = os.getenv("SPACE_APP_API_KEY")
+<body>
 
-# Gemini configuration
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+<header class="navbar">
 
+    <div class="logo">
+        <span class="logo-icon">✦</span>
+        Prompt Studio
+        <span class="version">V4</span>
+    </div>
 
-@app.route("/")
-def home():
-    return render_template("index.html")
+    <nav>
+        <a href="#workspace">Workspace</a>
+        <a href="#about">About</a>
+    </nav>
 
+    <div class="status">
+        <span class="status-dot"></span>
+        AI Systems Ready
+    </div>
 
-# -----------------------------------------
-# GEMINI PROMPT COMPLETION
-# -----------------------------------------
-
-@app.route("/api/complete", methods=["POST"])
-def complete_prompt():
-
-    try:
-        data = request.get_json(silent=True) or {}
-
-        prompt = data.get("prompt", "").strip()
-
-        if not prompt:
-            return jsonify({
-                "success": False,
-                "error": "Please enter a project idea."
-            }), 400
-
-        if not GEMINI_API_KEY:
-            return jsonify({
-                "success": False,
-                "error": "Gemini API key is not configured."
-            }), 500
-
-        client = genai.Client(api_key=GEMINI_API_KEY)
-
-        instruction = f"""
-You are an expert AI prompt engineer.
-
-Your task is to transform a short project idea into
-a detailed, professional, technically accurate,
-implementation-ready prompt.
-
-Expand the user's idea while preserving its original intention.
-
-Organize the completed prompt into these sections:
-
-1. Project Overview
-2. Project Objectives
-3. Functional Requirements
-4. Technical Requirements
-5. Technologies and Libraries
-6. Implementation Steps
-7. Expected Output
-8. Constraints and Edge Cases
-
-Important:
-- Specify technical details wherever appropriate.
-- Include relevant algorithms, tools and libraries.
-- Make requirements clear and actionable.
-- Preserve important user constraints.
-- Do not invent unsupported requirements.
-- Do not include unnecessary introductory explanations.
-- Return only the completed prompt.
-
-USER PROJECT IDEA:
-
-{prompt}
-"""
-
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=instruction
-        )
-
-        completed_prompt = response.text
-
-        if not completed_prompt:
-            raise Exception("Gemini returned an empty response.")
-
-        return jsonify({
-            "success": True,
-            "completed_prompt": completed_prompt
-        })
-
-    except Exception as e:
-
-        print(traceback.format_exc())
-
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
+</header>
 
 
-# -----------------------------------------
-# EXISTING LLMLINGUA V4 COMPRESSION
-# -----------------------------------------
+<main>
 
-@app.route("/api/compress", methods=["POST"])
-def compress_prompt():
+    <section class="hero">
 
-    try:
-        data = request.get_json(silent=True) or {}
+        <div class="hero-label">
+            AI PROMPT ENGINEERING PLATFORM
+        </div>
 
-        prompt = data.get("prompt", "").strip()
+        <h1>
+            Build Better Prompts.<br>
+            <span>Use Fewer Tokens.</span>
+        </h1>
 
-        target_reduction = data.get("target_reduction", 30)
+        <p>
+            Transform simple project ideas into detailed prompts
+            and optimize them using your fine-tuned LLMLingua V4 model.
+        </p>
 
-        if not prompt:
-            return jsonify({
-                "success": False,
-                "error": "Please enter a prompt."
-            }), 400
-
-        if not SPACE_APP_API_KEY:
-            return jsonify({
-                "success": False,
-                "error": "Hugging Face Space API key is missing."
-            }), 500
-
-        if not HF_SPACE_ID:
-            return jsonify({
-                "success": False,
-                "error": "Hugging Face Space ID is missing."
-            }), 500
-
-        target_reduction = int(target_reduction)
-
-        if target_reduction not in [20, 30, 40, 50, 60]:
-            return jsonify({
-                "success": False,
-                "error": "Invalid compression percentage."
-            }), 400
-
-        client = Client(
-            HF_SPACE_ID,
-            hf_token=HF_TOKEN
-        )
-
-        result = client.predict(
-            SPACE_APP_API_KEY,
-            prompt,
-            target_reduction,
-            api_name=HF_SPACE_API_NAME
-        )
-
-        # Normalize Gradio results
-        if isinstance(result, dict):
-            output = result
-
-        elif isinstance(result, (list, tuple)):
-            output = {
-                "result": result
-            }
-
-        else:
-            output = {
-                "result": result
-            }
-
-        return jsonify({
-            "success": True,
-            "data": output
-        })
-
-    except Exception as e:
-
-        print(traceback.format_exc())
-
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
+    </section>
 
 
-# -----------------------------------------
-# HEALTH CHECK
-# -----------------------------------------
+    <section class="workspace" id="workspace">
 
-@app.route("/health")
-def health():
+        <!-- LEFT PANEL: GEMINI -->
 
-    return jsonify({
-        "status": "running",
-        "gemini": bool(GEMINI_API_KEY),
-        "compressor": bool(SPACE_APP_API_KEY)
-    })
+        <div class="panel">
+
+            <div class="panel-header">
+
+                <div>
+                    <span class="panel-number">01</span>
+                    <h2>Prompt Completer</h2>
+                    <p>Expand your rough idea into a detailed prompt.</p>
+                </div>
+
+                <span class="model-tag gemini-tag">
+                    GEMINI FLASH
+                </span>
+
+            </div>
 
 
-if __name__ == "__main__":
-    app.run(
-        host="0.0.0.0",
-        port=int(os.environ.get("PORT", 5000)),
-        debug=False
-    )
+            <label for="roughPrompt">
+                YOUR PROJECT IDEA
+            </label>
+
+            <textarea
+                id="roughPrompt"
+                placeholder="Example: Build a face mask detection system using YOLO..."
+            ></textarea>
+
+
+            <button id="completePromptBtn" class="primary-button">
+                <span id="completeButtonText">
+                    ✨ Complete Prompt
+                </span>
+            </button>
+
+
+            <div class="divider"></div>
+
+
+            <div class="output-heading">
+                <h3>Completed Prompt</h3>
+                <span class="output-label">EDITABLE</span>
+            </div>
+
+
+            <textarea
+                id="completedPrompt"
+                class="output-area"
+                placeholder="Your detailed prompt will appear here..."
+            ></textarea>
+
+
+            <button id="sendToCompressor" class="secondary-button">
+                Send to V4 Compressor →
+            </button>
+
+
+            <p id="completionStatus" class="status-message"></p>
+
+        </div>
+
+
+        <!-- RIGHT PANEL: EXISTING LLMLINGUA V4 -->
+
+        <div class="panel">
+
+            <div class="panel-header">
+
+                <div>
+                    <span class="panel-number">02</span>
+                    <h2>Prompt Compressor</h2>
+                    <p>Optimize your prompt using your fine-tuned model.</p>
+                </div>
+
+                <span class="model-tag v4-tag">
+                    LLMLINGUA V4
+                </span>
+
+            </div>
+
+
+            <label for="promptInput">
+                INPUT PROMPT
+            </label>
+
+            <textarea
+                id="promptInput"
+                placeholder="Enter your own prompt or receive one from Gemini..."
+            ></textarea>
+
+
+            <div class="range-header">
+                <label for="compressionRange">
+                    COMPRESSION LEVEL
+                </label>
+
+                <span id="rangeValue">30%</span>
+            </div>
+
+
+            <select id="compressionRange">
+
+                <option value="20">20% Reduction</option>
+                <option value="30" selected>30% Reduction</option>
+                <option value="40">40% Reduction</option>
+                <option value="50">50% Reduction</option>
+                <option value="60">60% Reduction</option>
+
+            </select>
+
+
+            <button id="compressBtn" class="primary-button">
+
+                <span class="button-label">
+                    ⚡ Compress with V4
+                </span>
+
+            </button>
+
+
+            <div class="divider"></div>
+
+
+            <div class="output-heading">
+
+                <h3>Compressed Prompt</h3>
+
+                <span id="resultBadge" class="output-label">
+                    WAITING
+                </span>
+
+            </div>
+
+
+            <div id="emptyState" class="empty-state">
+                Your compressed prompt will appear here.
+            </div>
+
+
+            <div id="resultContent" hidden>
+
+                <pre id="compressedText"></pre>
+
+                <button id="copyButton" class="secondary-button">
+                    Copy Compressed Prompt
+                </button>
+
+                <span id="copyStatus"></span>
+
+                <div class="statistics">
+
+                    <div>
+                        <span>Original Tokens</span>
+                        <strong id="originalTokens">--</strong>
+                    </div>
+
+                    <div>
+                        <span>Compressed Tokens</span>
+                        <strong id="compressedTokens">--</strong>
+                    </div>
+
+                    <div>
+                        <span>Compression Ratio</span>
+                        <strong id="compressionRatio">--</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <button id="clearButton" class="clear-button">
+                Clear Compressor
+            </button>
+
+            <p id="statusMessage" class="status-message"></p>
+
+        </div>
+
+    </section>
+
+
+    <section class="about" id="about">
+
+        <h2>Two AI Systems. One Workflow.</h2>
+
+        <p>
+            Gemini Flash improves and expands your project instructions.
+            LLMLingua V4 compresses the resulting prompt to reduce token usage.
+        </p>
+
+    </section>
+
+</main>
+
+
+<footer>
+    Prompt Engineering Studio · Powered by Gemini Flash and LLMLingua V4
+</footer>
+
+</body>
+</html>
