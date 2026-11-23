@@ -1,289 +1,33 @@
-<!doctype html>
-<html lang="en">
+<textarea id="promptInput" placeholder="Enter your prompt here..."></textarea>
 
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#101827">
-  <meta name="description" content="Compress long prompts with the fine-tuned LLMLingua-2 V4 model.">
+<label>
+    Compression Reduction:
+    <span id="rangeValue">30%</span>
+</label>
 
-  <title>LLMLingua-2 V4 | Prompt Compressor</title>
+<input
+    type="range"
+    id="compressionRange"
+    min="20"
+    max="60"
+    step="10"
+    value="30"
+>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<button id="compressBtn">
+    Compress Prompt
+</button>
 
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<h3>Compressed Prompt</h3>
 
-  <link rel="stylesheet" href="/static/styles.css">
-</head>
+<pre id="output"></pre>
 
-<body>
+<h3>Compression Statistics</h3>
 
-  <div class="ambient ambient-one"></div>
-  <div class="ambient ambient-two"></div>
+<p>Original Tokens: <span id="originalTokens">-</span></p>
 
-  <main class="page-shell">
+<p>Compressed Tokens: <span id="compressedTokens">-</span></p>
 
-    <!-- HEADER -->
+<p>Compression Ratio: <span id="compressionRatio">-</span></p>
 
-    <header class="topbar">
-
-      <a class="brand" href="/" aria-label="LLMLingua V4 home">
-
-        <span class="brand-mark">L</span>
-
-        <span>
-          PromptLab
-          <span class="brand-muted">/ V4</span>
-        </span>
-
-      </a>
-
-      <div class="model-pill">
-        <span class="status-dot"></span>
-        V4 model endpoint
-      </div>
-
-    </header>
-
-
-    <!-- HERO SECTION -->
-
-    <section class="hero">
-
-      <div class="eyebrow">
-        <span class="eyebrow-line"></span>
-        FINE-TUNED PROMPT COMPRESSION
-      </div>
-
-      <h1>
-        Less prompt.<br>
-        <span>Same intent.</span>
-      </h1>
-
-      <p class="hero-copy">
-        Reduce prompt length with your fine-tuned LLMLingua-2 V4 model.
-        Paste a prompt below and send it to the hosted model.
-      </p>
-
-    </section>
-
-
-    <!-- WORKSPACE -->
-
-    <section class="workspace" aria-label="Prompt compression workspace">
-
-
-      <!-- INPUT PANEL -->
-
-      <div class="panel input-panel">
-
-        <div class="panel-heading">
-
-          <div>
-
-            <div class="panel-kicker">01 / INPUT</div>
-
-            <h2>Your original prompt</h2>
-
-          </div>
-
-          <button
-            id="clearButton"
-            class="text-button"
-            type="button">
-            Clear
-          </button>
-
-        </div>
-
-
-        <!-- PROMPT INPUT -->
-
-        <label class="sr-only" for="promptInput">
-          Original prompt
-        </label>
-
-        <textarea
-          id="promptInput"
-          maxlength="20000"
-          placeholder="Paste your ML, DL, coding, or any other prompt here..."
-          spellcheck="true">
-        </textarea>
-
-
-        <!-- COMPRESSION SETTINGS -->
-
-        <div class="compression-settings">
-
-          <label for="targetReduction">
-            Target Compression Reduction
-          </label>
-
-          <select id="targetReduction">
-
-            <option value="20">20%</option>
-
-            <option value="30" selected>30%</option>
-
-            <option value="40">40%</option>
-
-            <option value="50">50%</option>
-
-            <option value="60">60%</option>
-
-          </select>
-
-          <p>
-            Choose how much prompt length you want to reduce.
-          </p>
-
-        </div>
-
-
-        <!-- CHARACTER COUNT -->
-
-        <div class="input-footer">
-
-          <span id="charCount">0 characters</span>
-
-          <span>Maximum 20,000 characters</span>
-
-        </div>
-
-
-        <!-- COMPRESS BUTTON -->
-
-        <button
-          id="compressButton"
-          class="primary-button"
-          type="button">
-
-          <span class="button-label">
-            Compress with V4
-          </span>
-
-          <span class="button-arrow">↗</span>
-
-        </button>
-
-
-        <p class="privacy-note">
-          Your prompt is sent to this website's backend, then forwarded
-          to your Hugging Face Space. Do not submit passwords or sensitive information.
-        </p>
-
-      </div>
-
-
-      <!-- OUTPUT PANEL -->
-
-      <section class="panel output-panel" aria-live="polite">
-
-        <div class="panel-heading">
-
-          <div>
-
-            <div class="panel-kicker">02 / OUTPUT</div>
-
-            <h2>Compressed prompt</h2>
-
-          </div>
-
-          <span id="resultBadge" class="result-badge">
-            Waiting for input
-          </span>
-
-        </div>
-
-
-        <!-- EMPTY STATE -->
-
-        <div id="emptyState" class="empty-state">
-
-          <div class="empty-icon">↘</div>
-
-          <p>Your compressed prompt will appear here.</p>
-
-          <span>
-            Enter a prompt and select "Compress with V4".
-          </span>
-
-        </div>
-
-
-        <!-- RESULT -->
-
-        <div id="resultContent" class="result-content hidden">
-
-          <pre id="compressedText" class="compressed-text"></pre>
-
-          <div class="result-actions">
-
-            <button
-              id="copyButton"
-              class="secondary-button"
-              type="button">
-              Copy compressed prompt
-            </button>
-
-            <span id="copyStatus" class="copy-status"></span>
-
-          </div>
-
-
-          <!-- FULL API RESPONSE -->
-
-          <details class="raw-details">
-
-            <summary>View full API response</summary>
-
-            <pre id="rawResponse"></pre>
-
-          </details>
-
-        </div>
-
-      </section>
-
-    </section>
-
-
-    <!-- STATUS -->
-
-    <div
-      id="statusMessage"
-      class="status-message"
-      role="status">
-    </div>
-
-
-    <!-- FOOTER -->
-
-    <footer class="footer">
-
-      <span>
-        Powered by your fine-tuned LLMLingua-2 V4 model
-      </span>
-
-      <a
-        href="https://huggingface.co/spaces/Shrivatsanaik7/llmlingua-v4-api"
-        target="_blank"
-        rel="noopener noreferrer">
-
-        Hugging Face Space ↗
-
-      </a>
-
-    </footer>
-
-  </main>
-
-
-  <!-- JAVASCRIPT -->
-
-  <script src="/static/app.js"></script>
-
-</body>
-
-</html>
+<script src="/static/app.js"></script>
