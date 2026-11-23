@@ -1,126 +1,249 @@
 document.addEventListener("DOMContentLoaded", () => {
 
+    // -----------------------------------
+    // ELEMENTS
+    // -----------------------------------
+
+    const roughPrompt = document.getElementById("roughPrompt");
+    const completedPrompt = document.getElementById("completedPrompt");
+
+    const completePromptBtn = document.getElementById("completePromptBtn");
+    const sendToCompressor = document.getElementById("sendToCompressor");
+
+    const completionStatus = document.getElementById("completionStatus");
+
     const promptInput = document.getElementById("promptInput");
     const compressionRange = document.getElementById("compressionRange");
-    const compressButton = document.getElementById("compressBtn");
-    const clearButton = document.getElementById("clearButton");
 
-    const charCount = document.getElementById("charCount");
-    const rangeValue = document.getElementById("rangeValue");
-
-    const statusMessage = document.getElementById("statusMessage");
-    const resultBadge = document.getElementById("resultBadge");
+    const compressBtn = document.getElementById("compressBtn");
+    const buttonLabel = compressBtn.querySelector(".button-label");
 
     const emptyState = document.getElementById("emptyState");
     const resultContent = document.getElementById("resultContent");
 
     const compressedText = document.getElementById("compressedText");
 
-    const copyButton = document.getElementById("copyButton");
-    const copyStatus = document.getElementById("copyStatus");
-
     const originalTokens = document.getElementById("originalTokens");
     const compressedTokens = document.getElementById("compressedTokens");
     const compressionRatio = document.getElementById("compressionRatio");
 
+    const resultBadge = document.getElementById("resultBadge");
+    const statusMessage = document.getElementById("statusMessage");
 
-    // STATUS MESSAGE
+    const copyButton = document.getElementById("copyButton");
+    const copyStatus = document.getElementById("copyStatus");
 
-    function setStatus(message, kind = "") {
-        statusMessage.textContent = message;
-        statusMessage.className = `status-message ${kind}`.trim();
-    }
+    const clearButton = document.getElementById("clearButton");
 
-
-    // CHARACTER COUNTER
-
-    function updateCount() {
-        charCount.textContent =
-            `${promptInput.value.length.toLocaleString()} / 20,000 characters`;
-    }
+    const rangeValue = document.getElementById("rangeValue");
 
 
-    // COMPRESSION REDUCTION
+    // -----------------------------------
+    // GEMINI PROMPT COMPLETION
+    // -----------------------------------
 
-    function updateReduction() {
-        rangeValue.textContent = `${compressionRange.value}%`;
-    }
+    completePromptBtn.addEventListener("click", async () => {
 
+        const prompt = roughPrompt.value.trim();
 
-    // EXTRACT COMPRESSED TEXT FROM API RESPONSE
-
-    function findCompressedText(data) {
-
-        if (typeof data === "string") {
-            try {
-                return findCompressedText(JSON.parse(data));
-            } catch {
-                return data;
-            }
+        if (!prompt) {
+            completionStatus.textContent = "Please enter your project idea.";
+            return;
         }
 
-        if (Array.isArray(data)) {
-            for (const item of data) {
-                const found = findCompressedText(item);
-                if (found) return found;
+        completePromptBtn.disabled = true;
+        completePromptBtn.textContent = "Generating...";
+        completionStatus.textContent = "";
+
+        try {
+
+            const response = await fetch("/api/complete", {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    prompt: prompt
+                })
+
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || "Gemini completion failed.");
             }
-            return "";
+
+            completedPrompt.value = data.completed_prompt;
+
+            completionStatus.textContent =
+                "Prompt completed successfully.";
+
         }
 
-        if (data && typeof data === "object") {
+        catch (error) {
 
-            const possibleKeys = [
-                "compressed_prompt",
-                "compressedPrompt",
-                "compressed_text",
-                "compressed",
-                "output"
-            ];
+            completionStatus.textContent = error.message;
 
-            for (const key of possibleKeys) {
-                if (typeof data[key] === "string" && data[key].trim()) {
-                    return data[key];
-                }
-            }
-
-            for (const key of ["result", "data", "response"]) {
-                if (key in data) {
-                    const found = findCompressedText(data[key]);
-                    if (found) return found;
-                }
-            }
         }
 
-        return "";
+        finally {
+
+            completePromptBtn.disabled = false;
+            completePromptBtn.textContent = "✨ Complete Prompt";
+
+        }
+
+    });
+
+
+    // -----------------------------------
+    // SEND GEMINI OUTPUT TO V4
+    // -----------------------------------
+
+    sendToCompressor.addEventListener("click", () => {
+
+        const prompt = completedPrompt.value.trim();
+
+        if (!prompt) {
+
+            completionStatus.textContent =
+                "Generate a completed prompt first.";
+
+            return;
+
+        }
+
+        promptInput.value = prompt;
+
+        promptInput.dispatchEvent(
+            new Event("input", { bubbles: true })
+        );
+
+        statusMessage.textContent =
+            "Gemini prompt transferred to V4.";
+
+        promptInput.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+
+    });
+
+
+    // -----------------------------------
+    // V4 RESPONSE NORMALIZATION
+    // -----------------------------------
+
+    function findValue(obj, keys) {
+
+        if (!obj || typeof obj !== "object") {
+            return undefined;
+        }
+
+        for (const key of keys) {
+
+            if (obj[key] !== undefined && obj[key] !== null) {
+                return obj[key];
+            }
+
+        }
+
+        return undefined;
+
     }
 
 
-    // COMPRESS PROMPT
+    function normalizeResult(result) {
 
-    async function runCompression() {
+        if (Array.isArray(result)) {
+
+            // Supports Gradio returning multiple outputs.
+            return {
+                compressed: result[0],
+                original: result[1],
+                compressedTokens: result[2],
+                ratio: result[3]
+            };
+
+        }
+
+        if (typeof result === "string") {
+
+            return {
+                compressed: result
+            };
+
+        }
+
+        if (result && typeof result === "object") {
+
+            const nested = result.data || result.result || result;
+
+            if (Array.isArray(nested)) {
+                return normalizeResult(nested);
+            }
+
+            return {
+                compressed: findValue(nested, [
+                    "compressed_prompt",
+                    "compressed_text",
+                    "compressed",
+                    "output",
+                    "text"
+                ]),
+                original: findValue(nested, [
+                    "original_tokens",
+                    "original_token_count"
+                ]),
+                compressedTokens: findValue(nested, [
+                    "compressed_tokens",
+                    "compressed_token_count"
+                ]),
+                ratio: findValue(nested, [
+                    "compression_ratio",
+                    "ratio"
+                ])
+            };
+
+        }
+
+        return {
+            compressed: null
+        };
+
+    }
+
+
+    // -----------------------------------
+    // EXISTING V4 COMPRESSOR
+    // -----------------------------------
+
+    compressBtn.addEventListener("click", async () => {
 
         const prompt = promptInput.value.trim();
 
         const targetReduction = Number(compressionRange.value);
 
         if (!prompt) {
-            setStatus("Enter a prompt before compressing.", "error");
-            promptInput.focus();
+
+            statusMessage.textContent =
+                "Please enter a prompt to compress.";
+
             return;
+
         }
 
-        compressButton.disabled = true;
+        compressBtn.disabled = true;
 
-        compressButton.querySelector(".button-label").textContent =
-            "Compressing with V4...";
+        buttonLabel.textContent = "Compressing...";
 
-        resultBadge.textContent = "Processing";
+        statusMessage.textContent = "Connecting to LLMLingua V4...";
 
-        setStatus(
-            "Sending your prompt to LLMLingua V4. The first request may take longer while the Space wakes up."
-        );
-
-        copyStatus.textContent = "";
+        resultBadge.textContent = "PROCESSING";
 
         try {
 
@@ -133,175 +256,139 @@ document.addEventListener("DOMContentLoaded", () => {
                 },
 
                 body: JSON.stringify({
+
                     prompt: prompt,
+
                     target_reduction: targetReduction
+
                 })
 
             });
 
-            const payload = await response.json();
+            const data = await response.json();
 
-            if (!response.ok || payload.success === false) {
-                throw new Error(
-                    payload.error || `Request failed (${response.status}).`
-                );
+            if (!response.ok || !data.success) {
+
+                throw new Error(data.error || "Compression failed.");
+
             }
 
-            const compressed = findCompressedText(payload);
+            const result = normalizeResult(data.data);
 
-            if (!compressed) {
+            if (
+                typeof result.compressed !== "string" ||
+                !result.compressed.trim()
+            ) {
+
                 throw new Error(
-                    "API responded, but no compressed prompt was found. Check the Hugging Face Space output format."
+                    "Could not identify compressed text in the model response."
                 );
+
             }
 
-            compressedText.textContent = compressed;
-
-            emptyState.classList.add("hidden");
-            resultContent.classList.remove("hidden");
+            compressedText.textContent = result.compressed;
 
             originalTokens.textContent =
-                payload.original_tokens ??
-                payload.input_tokens ??
-                "—";
+                result.original ?? "--";
 
             compressedTokens.textContent =
-                payload.compressed_tokens ??
-                payload.output_tokens ??
-                "—";
+                result.compressedTokens ?? "--";
 
             compressionRatio.textContent =
-                payload.compression_ratio ??
-                payload.reduction ??
-                "—";
+                result.ratio ?? "--";
 
-            resultBadge.textContent = "Completed";
+            emptyState.hidden = true;
 
-            setStatus(
-                "Your prompt was compressed successfully.",
-                "success"
-            );
+            resultContent.hidden = false;
 
-        } catch (error) {
+            resultBadge.textContent = "COMPLETED";
 
-            console.error("Compression error:", error);
-
-            resultBadge.textContent = "Request failed";
-
-            setStatus(
-                error.message || "Something went wrong.",
-                "error"
-            );
-
-        } finally {
-
-            compressButton.disabled = false;
-
-            compressButton.querySelector(".button-label").textContent =
-                "Compress with V4";
+            statusMessage.textContent =
+                "Prompt compressed successfully using LLMLingua V4.";
 
         }
 
-    }
+        catch (error) {
+
+            statusMessage.textContent = error.message;
+
+            resultBadge.textContent = "ERROR";
+
+        }
+
+        finally {
+
+            compressBtn.disabled = false;
+
+            buttonLabel.textContent = "⚡ Compress with V4";
+
+        }
+
+    });
 
 
-    // CLEAR BUTTON
+    // -----------------------------------
+    // COMPRESSION RANGE
+    // -----------------------------------
+
+    compressionRange.addEventListener("change", () => {
+
+        rangeValue.textContent = compressionRange.value + "%";
+
+    });
+
+
+    // -----------------------------------
+    // COPY COMPRESSED PROMPT
+    // -----------------------------------
+
+    copyButton.addEventListener("click", async () => {
+
+        try {
+
+            await navigator.clipboard.writeText(
+                compressedText.textContent
+            );
+
+            copyStatus.textContent = "Copied!";
+
+        }
+
+        catch (error) {
+
+            copyStatus.textContent = "Unable to copy.";
+
+        }
+
+    });
+
+
+    // -----------------------------------
+    // CLEAR COMPRESSOR
+    // -----------------------------------
 
     clearButton.addEventListener("click", () => {
 
         promptInput.value = "";
 
-        updateCount();
-
         compressedText.textContent = "";
 
-        resultContent.classList.add("hidden");
+        originalTokens.textContent = "--";
 
-        emptyState.classList.remove("hidden");
+        compressedTokens.textContent = "--";
 
-        resultBadge.textContent = "Waiting for input";
+        compressionRatio.textContent = "--";
 
-        originalTokens.textContent = "—";
-        compressedTokens.textContent = "—";
-        compressionRatio.textContent = "—";
+        resultContent.hidden = true;
+
+        emptyState.hidden = false;
+
+        resultBadge.textContent = "WAITING";
+
+        statusMessage.textContent = "";
 
         copyStatus.textContent = "";
 
-        setStatus("");
-
-        promptInput.focus();
-
     });
-
-
-    // COPY BUTTON
-
-    copyButton.addEventListener("click", async () => {
-
-        const text = compressedText.textContent;
-
-        if (!text) return;
-
-        try {
-
-            await navigator.clipboard.writeText(text);
-
-            copyStatus.textContent = "Copied to clipboard.";
-
-        } catch {
-
-            copyStatus.textContent =
-                "Clipboard access unavailable in this browser.";
-
-        }
-
-    });
-
-
-    // MOBILE NAVIGATION
-
-    const mobileMenu = document.getElementById("mobileMenu");
-
-    const navLinks = document.querySelector(".nav-links");
-
-    mobileMenu.addEventListener("click", () => {
-
-        const isOpen = navLinks.classList.toggle("open");
-
-        mobileMenu.setAttribute(
-            "aria-expanded",
-            String(isOpen)
-        );
-
-    });
-
-
-    navLinks.querySelectorAll("a").forEach(link => {
-
-        link.addEventListener("click", () => {
-
-            navLinks.classList.remove("open");
-
-            mobileMenu.setAttribute("aria-expanded", "false");
-
-        });
-
-    });
-
-
-    // EVENT LISTENERS
-
-    promptInput.addEventListener("input", updateCount);
-
-    compressionRange.addEventListener("change", updateReduction);
-
-    compressButton.addEventListener("click", runCompression);
-
-
-    // INITIALIZE
-
-    updateCount();
-
-    updateReduction();
 
 });
