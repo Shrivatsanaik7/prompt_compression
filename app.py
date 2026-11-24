@@ -1,9 +1,9 @@
 import os
+import time
 import traceback
 
 from flask import Flask, request, jsonify, render_template
 from google import genai
-from google.genai import types
 from gradio_client import Client
 
 app = Flask(__name__)
@@ -38,6 +38,18 @@ GEMINI_MODEL = "gemini-3.8-flash"
 
 
 # ==========================================
+# GEMINI CLIENT
+# ==========================================
+
+gemini_client = None
+
+if GEMINI_API_KEY:
+    gemini_client = genai.Client(
+        api_key=GEMINI_API_KEY
+    )
+
+
+# ==========================================
 # HOME PAGE
 # ==========================================
 
@@ -66,8 +78,7 @@ def complete_prompt():
                 "error": "Please enter a project idea."
             }), 400
 
-
-        if not GEMINI_API_KEY:
+        if not gemini_client:
 
             return jsonify({
                 "success": False,
@@ -75,22 +86,21 @@ def complete_prompt():
             }), 500
 
 
-        # Gemini client using v1beta API
-
-        client = genai.Client(
-            api_key=GEMINI_API_KEY,
-            http_options=types.HttpOptions(
-                api_version="v1beta"
-            )
-        )
-
-
-        # Prompt engineering instructions
+        # ==================================
+        # PROMPT ENGINEERING INSTRUCTIONS
+        # ==================================
 
         instruction = f"""
-You are an expert AI prompt engineer specializing in
-software development, machine learning, deep learning,
-robotics, computer vision and artificial intelligence.
+You are an expert AI prompt engineer specializing in:
+
+- Software development
+- Machine learning
+- Deep learning
+- Robotics
+- Computer vision
+- Artificial intelligence
+- Python development
+- Embedded systems
 
 Your task is to transform the user's short project idea
 into a detailed, professional and implementation-ready prompt.
@@ -100,29 +110,37 @@ Expand the original idea while preserving its intention.
 STRUCTURE THE COMPLETED PROMPT USING:
 
 1. PROJECT OVERVIEW
-   Explain the project and its purpose.
+
+Explain the project and its purpose.
 
 2. PROJECT OBJECTIVES
-   Specify what the project must achieve.
+
+Specify what the project must achieve.
 
 3. FUNCTIONAL REQUIREMENTS
-   Explain the features and expected behavior.
+
+Explain all important features and expected behavior.
 
 4. TECHNICAL REQUIREMENTS
-   Specify algorithms, architecture and technical details.
+
+Specify algorithms, architecture and technical details.
 
 5. TECHNOLOGIES AND LIBRARIES
-   Recommend relevant programming languages,
-   frameworks, libraries and tools.
+
+Recommend relevant programming languages,
+frameworks, libraries and tools.
 
 6. IMPLEMENTATION STEPS
-   Provide a logical step-by-step development plan.
+
+Provide a logical step-by-step development plan.
 
 7. EXPECTED OUTPUT
-   Describe the expected final result.
+
+Describe the expected final result.
 
 8. CONSTRAINTS AND EDGE CASES
-   Include important limitations and possible failure cases.
+
+Include important limitations and possible failure cases.
 
 IMPORTANT INSTRUCTIONS:
 
@@ -141,16 +159,61 @@ USER'S ORIGINAL PROJECT IDEA:
 """
 
 
-        # Generate completed prompt
+        # ==================================
+        # GEMINI GENERATION WITH RETRIES
+        # ==================================
 
-        response = client.models.generate_content(
-            model=GEMINI_MODEL,
-            contents=instruction
-        )
+        response = None
+
+        for attempt in range(3):
+
+            try:
+
+                response = gemini_client.interactions.create(
+                    model=GEMINI_MODEL,
+                    input=instruction
+                )
+
+                break
+
+            except Exception as e:
+
+                error = str(e)
+
+                temporary_error = (
+                    "503" in error
+                    or "UNAVAILABLE" in error
+                    or "429" in error
+                    or "RESOURCE_EXHAUSTED" in error
+                )
+
+                if temporary_error and attempt < 2:
+
+                    wait_time = 2 ** (attempt + 1)
+
+                    print(
+                        f"Gemini temporarily unavailable. "
+                        f"Retry {attempt + 1}/2 in {wait_time} seconds."
+                    )
+
+                    time.sleep(wait_time)
+
+                else:
+
+                    raise
 
 
-        completed_prompt = response.text
+        # ==================================
+        # EXTRACT GEMINI OUTPUT
+        # ==================================
 
+        if response is None:
+
+            raise Exception(
+                "Gemini did not return a response."
+            )
+
+        completed_prompt = response.output_text
 
         if not completed_prompt:
 
@@ -326,7 +389,7 @@ def health():
 
         "status": "running",
 
-        "gemini": bool(GEMINI_API_KEY),
+        "gemini": bool(gemini_client),
 
         "compressor": bool(SPACE_APP_API_KEY)
 
