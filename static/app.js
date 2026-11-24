@@ -39,6 +39,44 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // -----------------------------------
+    // SAFE JSON RESPONSE HANDLER
+    // -----------------------------------
+
+    async function getJSONResponse(response) {
+
+        const contentType = response.headers.get("content-type") || "";
+
+        const responseText = await response.text();
+
+        if (!contentType.includes("application/json")) {
+
+            console.error("Non-JSON server response:", responseText);
+
+            throw new Error(
+                `Server returned HTML instead of JSON. HTTP ${response.status}. ` +
+                `Check Render logs. Response: ${responseText.slice(0, 200)}`
+            );
+
+        }
+
+        try {
+
+            return JSON.parse(responseText);
+
+        } catch (error) {
+
+            console.error("Invalid JSON response:", responseText);
+
+            throw new Error(
+                "Server returned invalid JSON. Check Render logs."
+            );
+
+        }
+
+    }
+
+
+    // -----------------------------------
     // GEMINI PROMPT COMPLETION
     // -----------------------------------
 
@@ -47,13 +85,19 @@ document.addEventListener("DOMContentLoaded", () => {
         const prompt = roughPrompt.value.trim();
 
         if (!prompt) {
-            completionStatus.textContent = "Please enter your project idea.";
+
+            completionStatus.textContent =
+                "Please enter your project idea.";
+
             return;
+
         }
 
         completePromptBtn.disabled = true;
+
         completePromptBtn.textContent = "Generating...";
-        completionStatus.textContent = "";
+
+        completionStatus.textContent = "Connecting to Gemini...";
 
         try {
 
@@ -71,20 +115,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
             });
 
-            const data = await response.json();
+
+            const data = await getJSONResponse(response);
+
 
             if (!response.ok || !data.success) {
-                throw new Error(data.error || "Gemini completion failed.");
+
+                throw new Error(
+                    data.error || "Gemini completion failed."
+                );
+
             }
+
 
             completedPrompt.value = data.completed_prompt;
 
             completionStatus.textContent =
-                "Prompt completed successfully.";
+                "Prompt completed successfully using Gemini.";
 
         }
 
         catch (error) {
+
+            console.error("Gemini Error:", error);
 
             completionStatus.textContent = error.message;
 
@@ -93,6 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
         finally {
 
             completePromptBtn.disabled = false;
+
             completePromptBtn.textContent = "✨ Complete Prompt";
 
         }
@@ -127,8 +181,11 @@ document.addEventListener("DOMContentLoaded", () => {
             "Gemini prompt transferred to V4.";
 
         promptInput.scrollIntoView({
+
             behavior: "smooth",
+
             block: "center"
+
         });
 
     });
@@ -141,13 +198,17 @@ document.addEventListener("DOMContentLoaded", () => {
     function findValue(obj, keys) {
 
         if (!obj || typeof obj !== "object") {
+
             return undefined;
+
         }
 
         for (const key of keys) {
 
             if (obj[key] !== undefined && obj[key] !== null) {
+
                 return obj[key];
+
             }
 
         }
@@ -161,58 +222,93 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (Array.isArray(result)) {
 
-            // Supports Gradio returning multiple outputs.
             return {
+
                 compressed: result[0],
+
                 original: result[1],
+
                 compressedTokens: result[2],
+
                 ratio: result[3]
+
             };
 
         }
+
 
         if (typeof result === "string") {
 
             return {
+
                 compressed: result
+
             };
 
         }
+
 
         if (result && typeof result === "object") {
 
             const nested = result.data || result.result || result;
 
+
             if (Array.isArray(nested)) {
+
                 return normalizeResult(nested);
+
             }
 
+
             return {
+
                 compressed: findValue(nested, [
+
                     "compressed_prompt",
+
                     "compressed_text",
+
                     "compressed",
+
                     "output",
+
                     "text"
+
                 ]),
+
                 original: findValue(nested, [
+
                     "original_tokens",
+
                     "original_token_count"
+
                 ]),
+
                 compressedTokens: findValue(nested, [
+
                     "compressed_tokens",
+
                     "compressed_token_count"
+
                 ]),
+
                 ratio: findValue(nested, [
+
                     "compression_ratio",
+
                     "ratio"
+
                 ])
+
             };
 
         }
 
+
         return {
+
             compressed: null
+
         };
 
     }
@@ -228,6 +324,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const targetReduction = Number(compressionRange.value);
 
+
         if (!prompt) {
 
             statusMessage.textContent =
@@ -237,13 +334,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
         }
 
+
         compressBtn.disabled = true;
 
         buttonLabel.textContent = "Compressing...";
 
-        statusMessage.textContent = "Connecting to LLMLingua V4...";
+        statusMessage.textContent =
+            "Connecting to LLMLingua V4...";
 
         resultBadge.textContent = "PROCESSING";
+
 
         try {
 
@@ -252,7 +352,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 method: "POST",
 
                 headers: {
+
                     "Content-Type": "application/json"
+
                 },
 
                 body: JSON.stringify({
@@ -265,26 +367,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
             });
 
-            const data = await response.json();
+
+            const data = await getJSONResponse(response);
+
 
             if (!response.ok || !data.success) {
 
-                throw new Error(data.error || "Compression failed.");
+                throw new Error(
+                    data.error || "Compression failed."
+                );
 
             }
 
+
             const result = normalizeResult(data.data);
+
 
             if (
                 typeof result.compressed !== "string" ||
                 !result.compressed.trim()
             ) {
 
+                console.error(
+                    "Unexpected V4 response:",
+                    data
+                );
+
                 throw new Error(
                     "Could not identify compressed text in the model response."
                 );
 
             }
+
 
             compressedText.textContent = result.compressed;
 
@@ -296,6 +410,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             compressionRatio.textContent =
                 result.ratio ?? "--";
+
 
             emptyState.hidden = true;
 
@@ -309,6 +424,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         catch (error) {
+
+            console.error("Compression Error:", error);
 
             statusMessage.textContent = error.message;
 
@@ -331,9 +448,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // COMPRESSION RANGE
     // -----------------------------------
 
-    compressionRange.addEventListener("change", () => {
+    compressionRange.addEventListener("input", () => {
 
-        rangeValue.textContent = compressionRange.value + "%";
+        rangeValue.textContent =
+            compressionRange.value + "%";
 
     });
 
@@ -356,7 +474,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         catch (error) {
 
-            copyStatus.textContent = "Unable to copy.";
+            copyStatus.textContent =
+                "Unable to copy.";
 
         }
 
